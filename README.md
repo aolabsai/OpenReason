@@ -3,11 +3,11 @@ an open source dataset and generation pipeline for Large-Scale Reinforcement Lea
 
 
 
-Many amazing teams have reverse-engineered [DeepSeek’s seminal R1-Zero and R1](https://arxiv.org/abs/2501.12948); reverse-engineered is perhaps not the best term, since to DeepSeek’s credit they did important work open sourced large parts of their efforts. 
+Many amazing teams have reverse-engineered [DeepSeek’s seminal R1-Zero and R1](https://arxiv.org/abs/2501.12948); reverse-engineered is perhaps not the best term, since to DeepSeek’s credit they did important work by open sourcing large parts of their efforts. Unlike traditional LLMs pre-trained on any/all data, reasoning models are LLMs usually as mixture of experts that are further fine-tuned on generated chain-of-thought data.
 
 This brings to bear two related points:
 - Every team reproducing R1 or building new reasoning models is constructing their own data pipeline (the data and code used to generate it) for large-scale reinforcement learning that distinguishes these models from the base LLMs they are fine-tuned from.
-- And it is precisely this part that DeepSeek did not open source (this post lays out how DeepSeek is 2/4 with being fully open)-- they didn’t open source the data used for large scale RL nor did they share the code and data sources used to generate that data.
+- And it is precisely this part that DeepSeek did not open source ([this post succinctly lays out how DeepSeek is 2/4 with being fully open](https://www.linkedin.com/posts/timnit-gebru-7b3b407_friends-for-something-to-be-open-source-activity-7290232331468967936-6vea))-- they didn’t open source the data used for large scale RL nor did they share the code and data sources used to generate that data
 
 For the sake of an open AI ecosystem and to positively accelerate development, let’s build a **large scale reinforcement learning data pipeline open source**.
 
