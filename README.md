@@ -1,5 +1,5 @@
 # OpenReason
-an open source dataset and generation pipeline for Large-Scale Reinforcement Learning
+Let's build DeepSeek-R1's large-scale reinforcement learning dataset and generation pipeline, open source
 ----
 
 [_Video Annoucement_](https://www.youtube.com/watch?v=dm5R3xCM8hY)
