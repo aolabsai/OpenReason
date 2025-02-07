@@ -32,22 +32,23 @@ Also Large-scale RL data pipelines generate training data, so with an open sourc
 
 Possible partners:
 
-Nomic.ai
-DAIR
-HuggingFace
-Meta
-Yoehi / BabyAGI
-
+- Nomic.ai
+- DAIR
+- HuggingFace
+- Meta / Llama
+- Yoehi / BabyAGI
+- OLlama
 
 
 Next steps:
 
-How we’d build it
-Make issues
-Open some issues as bounties
-Share 
-with possible open source partners
-with developers
+- How we’d build it
+   - seed repo with initial file structure/scripts
+- Make issues
+- Open some issues as bounties
+- Share 
+   - with possible open source partners
+   - with developers
 
 
 
