@@ -1,6 +1,8 @@
 # OpenReason
 an open source dataset and generation pipeline for Large-Scale Reinforcement Learning
+----
 
+[_Video Annoucement_](https://www.youtube.com/watch?v=dm5R3xCM8hY)
 
 
 Many amazing teams have reverse-engineered [DeepSeek’s seminal R1-Zero and R1](https://arxiv.org/abs/2501.12948); reverse-engineered is perhaps not the best term, since to DeepSeek’s credit they did important work by open sourcing large parts of their efforts. Unlike traditional LLMs pre-trained on any/all data, reasoning models are LLMs usually as mixture of experts that are further fine-tuned on generated chain-of-thought data.
@@ -13,6 +15,9 @@ For the sake of an open AI ecosystem and to positively accelerate development, l
 
 Specifically, we are talking about building the components of the R1 series that have not been open sourced by DeepSeek--  reward models (OR5 and OR6) and CoT-SFT data generation scripts, the parts highlighted in green boxes on this helpful diagram ([source](https://www.reddit.com/r/LocalLLaMA/comments/1i66j4f/deepseekr1_training_pipeline_visualized/)):
 
+<h1 align="center">
+<img src="https://raw.githubusercontent.com/aolabsai/OpenReason/refs/heads/main/diagram.png">
+</h1><br>
 https://raw.githubusercontent.com/aolabsai/OpenReason/refs/heads/main/diagram.png
 
 Let's flesh this out, collaborative Miro board link: https://miro.com/app/board/uXjVLi42Wug=/ Password: airebelfromrepo
