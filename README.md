@@ -34,6 +34,7 @@ Also, Large-scale RL data pipelines involve generating training data instead of 
 
 - [Open-R1 by HuggingFace](https://github.com/huggingface/open-r1)
 - [TinyZero by Jiaya Pan et al](https://github.com/Jiayi-Pan/TinyZero)
+- [s1: Simple test-time scaling](https://github.com/simplescaling/s1)
 
 
 ### Possible partners:
