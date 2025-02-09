@@ -1,5 +1,6 @@
 # OpenReason
 Let's build DeepSeek-R1's large-scale reinforcement learning dataset and generation pipeline, open source
+
 ----
 
 [_Video Annoucement_](https://www.youtube.com/watch?v=dm5R3xCM8hY)
@@ -18,7 +19,6 @@ Specifically, we are talking about building the components of the R1 series that
 <h1 align="center">
 <img src="https://raw.githubusercontent.com/aolabsai/OpenReason/refs/heads/main/diagram.png">
 </h1><br>
-https://raw.githubusercontent.com/aolabsai/OpenReason/refs/heads/main/diagram.png
 
 Let's flesh this out, collaborative Miro board link: https://miro.com/app/board/uXjVLi42Wug=/ Password: airebelfromrepo
 
@@ -26,11 +26,17 @@ Beyond the proven benefits of open source, for reasoning in particular building 
 
 Reasoning, after all, is a fluid quality– is it possible to be a reasoning agent if it cannot self-correct or re-learn? Re-training LLMs is not possible; the best we could do is provide up-to-date reasoning training data as more reasoning models are trained and deployed. We can help them stay current with the world and with our dynamic preferences.
 
-Also Large-scale RL data pipelines generate training data, so with an open source effort we can generate data from multiple base models/LLMs at various temperatures.
+Also, Large-scale RL data pipelines involve generating training data instead of scraping it, so with an open source effort we can generate data from multiple base models/LLMs at various temperatures.
 
 
 
-Possible partners:
+### Projects Replicating R1 & Building New Reasoning Models:
+
+- [Open-R1 by HuggingFace](https://github.com/huggingface/open-r1)
+- [TinyZero by Jiaya Pan et al](https://github.com/Jiayi-Pan/TinyZero)
+
+
+### Possible partners:
 
 - Nomic.ai
 - DAIR
@@ -40,7 +46,7 @@ Possible partners:
 - OLlama
 
 
-Next steps:
+# Next steps:
 
 - How we’d build it
    - seed repo with initial file structure/scripts
