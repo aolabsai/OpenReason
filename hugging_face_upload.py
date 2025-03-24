@@ -3,17 +3,17 @@ from functools import partial
 import random
 
 import datasets
-
 from decontaminate_util import *
 
+from functools import partial
 from huggingface_hub import login
 
 #loading key
-with open("hugging_key.txt", "r") as file:
-    key = file.read().strip()  
+with open("D:/AO/S1/OpenReason/hugging_key.txt", "r") as file:
+    key = file.read().strip()
 
-
-login(key) 
+print(f"Token: {key}")  # Check if the token looks correct
+login(key)
 
 
 
@@ -21,33 +21,67 @@ login(key)
 DS_COLUMNS = {"question", "solution", "cot_type", "source_type", "metadata"}
 
 
-def load_numinamath():
+def load_numinamath(sample_limit=None):
     ds = datasets.load_dataset("AI-MO/NuminaMath-CoT", trust_remote_code=True)["train"]
     ds_aops = ds.filter(lambda x: x["source"] == "aops_forum")
     ds = datasets.concatenate_datasets([ds, ds_aops])
     
-    ds = ds.map(lambda x: {"question": x.pop("problem"), "solution": x.pop("solution"), "cot_type": "math", "source_type": "AI-MO/NuminaMath-CoT/" + x["source"], "metadata": str(x)})
+    ds = ds.map(lambda x: {
+        "question": x.pop("problem"),
+        "solution": x.pop("solution"),
+        "cot_type": "math",
+        "source_type": "AI-MO/NuminaMath-CoT/" + x["source"],
+        "metadata": str(x)
+    })
+
     ds = ds.remove_columns([c for c in ds.column_names if c not in DS_COLUMNS])
-    # ds = ds.shuffle(seed=42).select(range(len(ds) // 4))
+
+    # Apply sample limit
+    if sample_limit is not None:
+        ds = ds.select(range(min(sample_limit, len(ds))))
+
     return ds
 
-def load_theoremqa():
+
+def load_theoremqa(sample_limit=None):
     ds = datasets.load_dataset("TIGER-Lab/TheoremQA", trust_remote_code=True)["test"]
     ds = ds.filter(lambda x: x["Picture"] is None)
-    ds = ds.map(lambda x: {"question": x.pop("Question"), "solution": x.pop("Answer"), "cot_type": "math", "source_type": "TIGER-Lab/TheoremQA/" + x['Answer_type'], "metadata": str(x)})
+
+    ds = ds.map(lambda x: {
+        "question": x.pop("Question"),
+        "solution": x.pop("Answer"),
+        "cot_type": "math",
+        "source_type": "TIGER-Lab/TheoremQA/" + x['Answer_type'],
+        "metadata": str(x)
+    })
+
     ds = ds.remove_columns([c for c in ds.column_names if c not in DS_COLUMNS])
-    # ds = ds.shuffle(seed=42).select(range(len(ds) // 4))
+
+    # Apply sample limit
+    if sample_limit is not None:
+        ds = ds.select(range(min(sample_limit, len(ds))))
+
     return ds
 
-def load_generic(name, split, question_field="question", solution_field="solution", cot_type="math", version_tag=None):
-    all_questions = []
-    all_examples = []
+
+def load_generic(name, split, question_field="question", solution_field="solution", cot_type="math", version_tag=None, sample_limit=None):
     conf = "gpqa_diamond" if name == "Idavidrein/gpqa" else None
     ds = datasets.load_dataset(name, conf, token=key, trust_remote_code=True)[split]
-    # Make metadata a string that can be loaded via literal_eval to avoid TypeError: Couldn't cast array of type list<item: string> to null 
-    ds = ds.map(lambda x: {"question": x.pop(question_field), "solution": x.pop(solution_field, None), "cot_type": cot_type, "source_type": name, "metadata": str(x)})
+
+    ds = ds.map(lambda x: {
+        "question": x.pop(question_field),
+        "solution": x.pop(solution_field, None),
+        "cot_type": cot_type,
+        "source_type": name,
+        "metadata": str(x)
+    })
+
     ds = ds.remove_columns([c for c in ds.column_names if c not in DS_COLUMNS])
-    # ds = ds.shuffle(seed=42).select(range(len(ds) // 4))
+
+    # Apply sample limit
+    if sample_limit is not None:
+        ds = ds.select(range(min(sample_limit, len(ds))))
+
     return ds
 
 def load_scieval():
@@ -146,31 +180,67 @@ def load_olympiad_bench():
     return ds
 
 
-def load_gpqa_extended():
+def load_gpqa_extended(sample_limit=None):
     gpqa_to_o1domain = {"Chemistry": "science", "Biology": "science", "Physics": "science"}
     ds = datasets.load_dataset("Idavidrein/gpqa", "gpqa_extended", token=key, trust_remote_code=True)['train']
+    
     # Filter against diamond
     ds_diamond = datasets.load_dataset("Idavidrein/gpqa", "gpqa_diamond", token=key, trust_remote_code=True)['train']
     ds = ds.filter(lambda x: x["Question"] not in ds_diamond["Question"])
-    ds = ds.map(lambda x: {"question": x.pop("Question"), "solution": x.pop("Explanation"), "cot_type": gpqa_to_o1domain[x['High-level domain']], "source_type": "Idavidrein/gpqa", "metadata": str(x)})
+
+    ds = ds.map(lambda x: {
+        "question": x.pop("Question"),
+        "solution": x.pop("Explanation"),
+        "cot_type": gpqa_to_o1domain[x['High-level domain']],
+        "source_type": "Idavidrein/gpqa",
+        "metadata": str(x)
+    })
 
     ds = ds.remove_columns([c for c in ds.column_names if c not in DS_COLUMNS])
-    # ds = ds.shuffle(seed=42).select(range(len(ds) // 4))
+
+    # Apply sample limit
+    if sample_limit is not None:
+        ds = ds.select(range(min(sample_limit, len(ds))))
+
     return ds
 
 
-def load_usaco():
+def load_usaco(sample_limit=None):
     ds = datasets.load_dataset("codegenning/usacobench_formatted")['test']
-    ds = ds.map(lambda x: {"question": x.pop("question").strip(), "solution": None, "cot_type": "coding", "source_type": "codegenning/usacobench_formatted", "metadata": str(x)})
+    ds = ds.map(lambda x: {
+        "question": x.pop("question").strip(),
+        "solution": None,
+        "cot_type": "coding",
+        "source_type": "codegenning/usacobench_formatted",
+        "metadata": str(x)
+    })
+
     ds = ds.remove_columns([c for c in ds.column_names if c not in DS_COLUMNS])
-    # ds = ds.shuffle(seed=42).select(range(len(ds) // 4))
+
+    # Apply sample limit
+    if sample_limit is not None:
+        ds = ds.select(range(min(sample_limit, len(ds))))
+
     return ds
 
-def load_numinamath_tir():
+
+def load_numinamath_tir(sample_limit=None):
     ds = datasets.load_dataset("AI-MO/NuminaMath-TIR", trust_remote_code=True)["train"]
 
-    ds = ds.map(lambda x: {"question": x.pop("problem"), "solution": x.pop("solution"), "cot_type": "math", "source_type": "AI-MO/NuminaMath-TIR", "metadata": str(x)})
+    ds = ds.map(lambda x: {
+        "question": x.pop("problem"),
+        "solution": x.pop("solution"),
+        "cot_type": "math",
+        "source_type": "AI-MO/NuminaMath-TIR",
+        "metadata": str(x)
+    })
+
     ds = ds.remove_columns([c for c in ds.column_names if c not in DS_COLUMNS])
+
+    # Apply sample limit
+    if sample_limit is not None:
+        ds = ds.select(range(min(sample_limit, len(ds))))
+
     return ds
 
 
@@ -181,46 +251,64 @@ def extract_question_dolphin(messages):
                 return msg["content"]
         return "" 
 
-
-## it has reasoning as well
-def load_dolphin_r1():
-    ds = datasets.load_dataset("cognitivecomputations/dolphin-r1", trust_remote_code=True, split="train")
-    ds = ds.filter(lambda x: x["subset"] == "reasoning-deepseek")
-
+def load_dolphin_r1(sample_limit=None):
+    # Load the dataset with the correct config name
+    ds = datasets.load_dataset("cognitivecomputations/dolphin-r1", "reasoning-deepseek", trust_remote_code=True, split="train")
+    
+    # Transform dataset
     ds = ds.map(lambda x: {
         "question": extract_question_dolphin(x["messages"]), 
         "solution": x["answer"],
         "cot_type": "math",
         "source_type": "cognitivecomputations/dolphin-r1",
-        "metadata": str({"reasoning": x["reasoning"]})  # Store reasoning in metadata
+        "metadata": str({"reasoning": x.get("reasoning", "")})
     })
-
-    ds = ds.remove_columns([c for c in ds.column_names if c not in DS_COLUMNS])
+    
+    # Retain only required columns
+    ds = ds.remove_columns(set(ds.column_names) - set(DS_COLUMNS))
+    
+    # Apply sample limit
+    if sample_limit:
+        ds = ds.select(range(min(sample_limit, len(ds))))
+    
     return ds
 
 
 
+
+# DS_TO_SELECTION = {
+#     # Name: [load function, selection function, #samples]
+#     # Take all (720)
+#     "TheoremQA": [load_theoremqa, None, None],
+#     # Pretty big (434,778) and unclear how high quality so take 500
+#     "NuminaMath": [load_numinamath, None, 500],
+#     # Take all as super high-quality (3329)
+#     # "Omni-MATH": [partial(load_generic, name="KbsdJames/Omni-MATH", question_field="problem", split="test"), select_examples_omni_math, None],
+#     "Omni-MATH": [partial(load_generic, name="KbsdJames/Omni-MATH", question_field="problem", split="test"), None, None],
+#     # Not super diverse (only 4 subtasks which same question format) so do not take all (14228)
+#     "SciEval": [load_scieval, select_examples_scieval, 250],
+#     # Very high-quality so take all (626)
+#     "OlympiadBench": [load_olympiad_bench, None, None],
+#     # # Very high-quality so take all
+#     "GPQA": [load_gpqa_extended, None, None],
+#     # # Very high-quality so take all (520)
+#     "USACO": [load_usaco, None, 520], 
+
+#     "Dolphin-R1": [load_dolphin_r1, None, 200],
+
+#     "NuminaMath-TIR": [load_numinamath_tir, None, 500],
+# }
+
 DS_TO_SELECTION = {
-    # Name: [load function, selection function, #samples]
-    # Take all (720)
-    "TheoremQA": [load_theoremqa, None, None],
-    # Pretty big (434,778) and unclear how high quality so take 500
-    "NuminaMath": [load_numinamath, None, None],
-    # Take all as super high-quality (3329)
-    # "Omni-MATH": [partial(load_generic, name="KbsdJames/Omni-MATH", question_field="problem", split="test"), select_examples_omni_math, None],
-    "Omni-MATH": [partial(load_generic, name="KbsdJames/Omni-MATH", question_field="problem", split="test"), None, None],
-    # Not super diverse (only 4 subtasks which same question format) so do not take all (14228)
+    "TheoremQA": [partial(load_theoremqa, sample_limit=None), None, None],
+    "NuminaMath": [partial(load_numinamath, sample_limit=500), None, None],
+    "Omni-MATH": [partial(load_generic, name="KbsdJames/Omni-MATH", question_field="problem", split="test", sample_limit=500), None, None],
     "SciEval": [load_scieval, select_examples_scieval, 250],
-    # Very high-quality so take all (626)
     "OlympiadBench": [load_olympiad_bench, None, None],
-    # # Very high-quality so take all
-    "GPQA": [load_gpqa_extended, None, None],
-    # # Very high-quality so take all (520)
-    "USACO": [load_usaco, None, None], 
-
-    "Dolphin-R1": [load_dolphin_r1, None, None],
-
-    "NuminaMath-TIR": [load_numinamath_tir, None, None],
+    "GPQA": [partial(load_gpqa_extended, sample_limit=500), None, None],
+    "USACO": [partial(load_usaco, sample_limit=520), None, None],
+    "Dolphin-R1": [partial(load_dolphin_r1, sample_limit=200), None, None],
+    "NuminaMath-TIR": [partial(load_numinamath_tir, sample_limit=500), None, None],
 }
 
 
@@ -268,4 +356,4 @@ if __name__ == "__main__":
     # Drop duplicates in `ds` on "col1"
     # import pdb; pdb.set_trace()
     ds = ds.filter(partial(is_unique, column="question", memory=memory))
-    ds.push_to_hub("aolabs/OR_verified", use_auth_token=key)
+    ds.push_to_hub("aolabs/OR_verified", token=key)
