@@ -27,9 +27,9 @@ step 1: I need to multiply 64 and 12 with each other.
 step 2: I can first multiply 64 * 10 which is 640.
 
 output = [
-"Next, let's do 64*2=129.",
+"Let's do 64*2=129.",
 
-"Next, I multiply 64 * 2, which yields 128.",
+"I multiply 64 * 2, which yields 128.",
 
 "Now we can directly calculate 64 * 12 = 768.",
 

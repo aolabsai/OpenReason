@@ -6,9 +6,10 @@ from thinker_prompt import thinker_system_prompt, thinker_initial_test
 from selector_prompt import selector_system_prompt, selector_initial_test
 from concluder_prompt import concluder_system_prompt
 
+# How to run this script:
+# put your question as a string in the problem variable and then run this whole script and see the slop-magic.
 
-
-problem = "What is 10 times 42?"
+problem = "How do I set up a headless computer to execute code for a distributed team?"
 chain = """"""
 chain_steps = 0
 answer = ""
@@ -151,7 +152,7 @@ def answer( question, with_answer=False, with_select=True):
         
         n += 1
 
-question= "Why is the sky blue?"
+question= problem
 
 
 final_answer, chain, n = answer( question)

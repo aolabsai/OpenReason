@@ -22,10 +22,10 @@ step 2: I can first multiply 64 * 10 which is 640.
 
 Possible Next Thinking Steps:
 A)
-Next, let's do 64*2=129.
+Let's do 64*2=129.
 
 B)
-Next, I multiply 64 * 2, which yields 128.
+I multiply 64 * 2, which yields 128.
 
 C)
 Now we can directly calculate 64 * 12 = 768.
@@ -33,13 +33,15 @@ Now we can directly calculate 64 * 12 = 768.
 D)
 I now need to add 64 to 640 which gives 704.
 
-X)
+E)
 STOP thinking and provide a final answer.
 
 output = "B"
 
 Respond only with a python string. Be sure to strictly follow the above example and make sure the output is a string made up of only 1 character that is a capitalized letter corresponding to the best next thinking step from the list of Possible Next Thinking Steps.
 """
+# consider making selector only the STOP, and final answer provided by another fresh prompt / function that takes all this in context
+
 
 # after system prompt, should output only a single character string that is a capitalized letter
 selector_initial_test = """
