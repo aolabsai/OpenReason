@@ -7,6 +7,7 @@ from decontaminate_util import *
 
 from functools import partial
 from huggingface_hub import login
+from R-Null import combined 
 
 #loading key
 with open("D:/AO/S1/OpenReason/hugging_key.txt", "r") as file:
@@ -314,23 +315,12 @@ DS_TO_SELECTION = {
 
 if __name__ == "__main__":
     random.seed(42)
-    ### Load all ###
-    # Load test questions
-    test_datasets = {
-        "AI-MO/aimo-validation-aime": {"split": "train", "question_field": "problem"},
-        # "Idavidrein/gpqa": {"split": "train", "question_field": "Question"},
-        # "simplescaling/openaimath": {"split": "test", "question_field": "problem"},
-        # "livecodebench/code_generation_lite": {"split": "test", "question_field": "question_content", "version_tag": "release_v4"},
-    }
-    test_questions = []
-    for name, config in tqdm(test_datasets.items(), desc="Loading test questions"):
-        test_questions.extend(load_generic(name, **config)['question'])
-
+    
     ds_all = []
     for ds_name, (load_fn, selection_fn, n_samples) in DS_TO_SELECTION.items():
         print(f"Processing {ds_name}...")
         ds = load_fn()
-        ds = decontaminate_train_data(ds['question'], test_questions, ds, ngram_size=8)
+        
         if selection_fn:
             # Outdated, needs to be updated
             if ds_name == "Omni-MATH":
@@ -344,16 +334,20 @@ if __name__ == "__main__":
             if n_samples:
                 ds = ds.select(range(min(n_samples, len(ds)))) 
         ds_all.append(ds)
+    
     ds = datasets.concatenate_datasets(ds_all)
+    
     # Add empty/none cot column
-    ds = ds.map(lambda x: {"cot": None, **x})
+    ds = ds.map(lambda x: {"cot": combined.answer(x["question"])[1], **x})
+    
     # Simple deduplication
     memory = set()
     def is_unique(elem, column, memory):
         if elem[column] in memory: return False
         memory.add(elem[column])
         return True
-    # Drop duplicates in `ds` on "col1"
-    # import pdb; pdb.set_trace()
+
+    # Drop duplicates in `ds` on "question"
     ds = ds.filter(partial(is_unique, column="question", memory=memory))
+    
     ds.push_to_hub("aolabs/OR_verified", token=key)
