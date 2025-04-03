@@ -9,13 +9,13 @@ from concluder_prompt import concluder_system_prompt
 # How to run this script:
 # put your question as a string in the problem variable and then run this whole script and see the slop-magic.
 
-problem = "How do I set up a headless computer to execute code for a distributed team?"
+problem = "what is the value of X^4 + X^2 for x = 3"
 chain = """"""
 chain_steps = 0
 answer = ""
 
 
-def think(chain, with_answer=False):
+def think(chain, with_answer=False, problem=problem):
 
     thoughts = f"""
     Question:
@@ -26,22 +26,23 @@ def think(chain, with_answer=False):
 
     thoughts = thinker_system_prompt + thoughts
 
-    n = 0
+    # n = 0
     new_thoughts = []
-    while len(new_thoughts) != 4:
-        think = ollama.generate('llama3.2:latest', thoughts)
-        new_thoughts = think['response']
-        print("NEWWWW THOUGHTSS ---- "+new_thoughts)
+    for n in range(4):
+        think = ollama.generate('deepseek-r1:7b', thoughts)
+        next_step = think['response']
+        print("NEWWWW THOUGHT-- " + str(n+1)+ " ---- "+next_step)
         try:
-            new_thoughts = json.loads(new_thoughts)
-            n += 1
-            print("thinking counter - " + str(n))
-            if n > 1: print("stupid")
+            next_step = json.loads(next_step)
+            # n += 1
+            # print("thinking counter - " + str(n))
+            # if n > 1: print("stupid")
         except Exception as e:
             print(e)
             pass
+        new_thoughts.append(next_step)
         if with_answer:
-            if type(new_thoughts) is str:
+            if type(next_step) is str:
                     answer = new_thoughts.replace("\n", " ")  # stripping away line breaks  
                     print("ANSWER RETURNED")
                     return chain, answer, 0
@@ -113,6 +114,7 @@ def select(chain, new_thoughts, new_thoughts_dict):
     return chain, new_selection
 
 
+
 def answer( question, with_answer=False, with_select=True):
 
     global chain
@@ -135,6 +137,7 @@ def answer( question, with_answer=False, with_select=True):
         print(chain)
         if with_select:
             if new_selection == "E":
+                unanswered = False
 
                 conclusions = f"""
                 Question:
@@ -145,7 +148,7 @@ def answer( question, with_answer=False, with_select=True):
                 """
                 conclusions = concluder_system_prompt + conclusions
 
-                final_answer = ollama.generate('llama3.2:latest', conclusions)
+                final_answer = ollama.generate('deepseek-r1:7b', conclusions)
                 final_answer = final_answer['response']
 
                 return final_answer, chain, n

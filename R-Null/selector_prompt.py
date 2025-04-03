@@ -10,6 +10,7 @@ Please respond with the very best of your abilities. Your task is to identify th
 - Analyze and understand the question.
 - Evaluate and compare each proposed next thinking step for correctness and relevance to the accumulated chain of thought and problem.
 - Pick the best possible next thinking step based on how likely it could lead to the correct final answer if the chain of thought is followed from beginning to end.
+- Pick option E if the Chain of Thought (CoT) has already reached the final step and the answer is now available.
 
 An example is below--
 
