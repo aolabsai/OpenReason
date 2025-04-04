@@ -322,7 +322,6 @@ if __name__ == "__main__":
         ds = load_fn()
         
         if selection_fn:
-            # Outdated, needs to be updated
             if ds_name == "Omni-MATH":
                 ds_list = list(ds)
                 selected_examples, selected_subdomains, selected_difficulties = selection_fn(ds_list, n_samples)
@@ -337,8 +336,8 @@ if __name__ == "__main__":
     
     ds = datasets.concatenate_datasets(ds_all)
     
-    # Add empty/none cot column
-    ds = ds.map(lambda x: {"cot": combined.answer(x["question"])[1], **x})
+    # Add CoT column
+    ds = ds.map(lambda x: {"cot": combined.answer(x["question"], x["solution"])[1], **x})
     
     # Simple deduplication
     memory = set()
