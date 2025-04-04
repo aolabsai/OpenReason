@@ -6,7 +6,9 @@ from thinker_prompt import thinker_system_prompt, thinker_initial_test
 from selector_prompt import selector_system_prompt, selector_initial_test
 from concluder_prompt import concluder_system_prompt
 
-# How to run this script:
+from verified_prompts.thinker_prompt import verified_thinker_system_prompt
+from verified_prompts.selector_prompt import verified_selector_system_prompt
+from verified_prompts.concluder_prompt import verified_concluder_system_prompt
 # put your question as a string in the problem variable and then run this whole script and see the slop-magic.
 
 problem = "what is the value of X^4 + X^2 for x = 3"
@@ -15,16 +17,30 @@ chain_steps = 0
 answer = ""
 
 
-def think(chain, with_answer=False, problem=problem):
+def think(chain, problem=problem, answer=None):
 
-    thoughts = f"""
-    Question:
-    {problem}
+    if answer:
+        thoughts = f"""
+        Question:
+        {problem}
 
-    Chain of Thoughts:
-    {chain}"""
+        Chain of Thoughts:
+        {chain}
+        
+        Solution/Answer: 
+        {answer}"""
 
-    thoughts = thinker_system_prompt + thoughts
+        thoughts = verified_thinker_system_prompt + thoughts
+
+    else:
+        thoughts = f"""
+        Question:
+        {problem}
+
+        Chain of Thoughts:
+        {chain}"""
+
+        thoughts = thinker_system_prompt + thoughts
 
     # n = 0
     new_thoughts = []
@@ -41,11 +57,11 @@ def think(chain, with_answer=False, problem=problem):
             print(e)
             pass
         new_thoughts.append(next_step)
-        if with_answer:
-            if type(next_step) is str:
-                    answer = new_thoughts.replace("\n", " ")  # stripping away line breaks  
-                    print("ANSWER RETURNED")
-                    return chain, answer, 0
+        # if with_answer:
+        #     if type(next_step) is str:
+        #             answer = new_thoughts.replace("\n", " ")  # stripping away line breaks  
+        #             print("ANSWER RETURNED")
+        #             return chain, answer, 0
 
     keys = ["A", "B", "C", "D", "E"]
     new_thoughts += ["STOP thinking and provide a final answer"]
@@ -69,7 +85,7 @@ def think(chain, with_answer=False, problem=problem):
     return chain, new_thoughts, new_thoughts_dict
 
 
-def select(chain, new_thoughts, new_thoughts_dict):
+def select(chain, new_thoughts, new_thoughts_dict, answer=None):
     choices = f"""Question:
     {problem}
 
@@ -77,8 +93,31 @@ def select(chain, new_thoughts, new_thoughts_dict):
 
     Possible Next Thinking Steps: 
     {new_thoughts}"""
+    
+    if answer:
+        choices = f"""Question:
+        {problem}
 
-    choices = selector_system_prompt + choices
+        Chain of Thoughts:
+        {chain}
+        
+        Solution/Answer:
+        {answer}
+
+        Possible Next Thinking Steps: 
+        {new_thoughts}"""
+        choices = verified_concluder_system_prompt + choices
+
+    else:
+        choices = f"""Question:
+        {problem}
+
+        Chain of Thoughts:
+        {chain}
+
+        Possible Next Thinking Steps: 
+        {new_thoughts}"""
+        choices = selector_system_prompt + choices
 
     s = 0
     while True:
@@ -115,7 +154,7 @@ def select(chain, new_thoughts, new_thoughts_dict):
 
 
 
-def answer( question, with_answer=False, with_select=True):
+def answer( question, with_select=True, answer=None):
 
     global chain
     global problem
@@ -127,26 +166,39 @@ def answer( question, with_answer=False, with_select=True):
         chain, new_thoughts, new_thoughts_dict = think(chain)
         print(new_thoughts_dict)
 
-        if with_answer:
-            if new_thoughts_dict == 0:
-                final_answer = new_thoughts
-                return final_answer, chain, n
+        # if with_answer:
+        #     if new_thoughts_dict == 0:
+        #         final_answer = new_thoughts
+        #         return final_answer, chain, n
 
 
-        chain, new_selection = select(chain, new_thoughts, new_thoughts_dict)
+        chain, new_selection = select(chain, new_thoughts, new_thoughts_dict, answer=answer)
         print(chain)
         if with_select:
             if new_selection == "E":
                 unanswered = False
+                if answer:
+                    conclusions = f"""
+                    Question:
+                    {problem}
 
-                conclusions = f"""
-                Question:
-                {problem}
+                    Chain of Thoughts:
+                    {chain}
+        
+                    Solution/Answer: 
+                    {answer}"""
 
-                Chain of Thoughts:
-                {chain}
-                """
-                conclusions = concluder_system_prompt + conclusions
+                    conclusions = verified_concluder_system_prompt + conclusions
+
+                else:
+                    conclusions = f"""
+                    Question:
+                    {problem}
+
+                    Chain of Thoughts:
+                    {chain}"""
+
+                    conclusions = concluder_system_prompt + conclusions
 
                 final_answer = ollama.generate('deepseek-r1:7b', conclusions)
                 final_answer = final_answer['response']
@@ -156,9 +208,9 @@ def answer( question, with_answer=False, with_select=True):
         n += 1
 
 question= problem
+answer=None
 
-
-final_answer, chain, n = answer( question)
+final_answer, chain, n = answer(question, answer=answer)
 
 # https://github.com/ollama/ollama/blob/main/docs/api.md#response
 
