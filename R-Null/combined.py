@@ -9,220 +9,162 @@ from unverified_prompts.concluder_prompt import unverified_concluder_system_prom
 from verified_prompts.thinker_prompt import verified_thinker_system_prompt
 from verified_prompts.selector_prompt import verified_selector_system_prompt
 from verified_prompts.concluder_prompt import verified_concluder_system_prompt
-# put your question as a string in the problem variable and then run this whole script and see the slop-magic.
 
-problem = "Let h(x) = (x^{-1/2} + 2x)(7 - x^{-1}). What is h'(x) when x = 4?"
-chain = ""
-chain_steps = 0
-answer = "13.609"
+class ChainOfThoughtRunner:
+    def __init__(self, model_name='llama3.2:3b', verified=True):
+        self.model_name = model_name
+        self.verified = verified
+        self.chain = ""
+        self.problem = ""
+        self.chain_steps = 0
+        self.prompts = self.load_prompts(verified)
 
-def clean_response(response):
-    # Try to extract the final summary statement
-    match = re.findall(r'</think>\s*([^\n]+)', response)
-    if match:
-        response = match[0]
-    else:
-        # Fallback: remove <think> tags and take the last non-empty line
-        response = re.sub(r'<\/?think>', '', response).strip()
-        response = [line.strip() for line in response.splitlines() if line.strip()]
-        if response:
-            response = response[-1]
-        else:
-            response = "Could not extract step"
-    
-    return response[:60] 
+    def load_prompts(self, verified):
+        return {
+            "thinker": verified_thinker_system_prompt if verified else unverified_thinker_system_prompt,
+            "selector": verified_selector_system_prompt if verified else unverified_selector_system_prompt,
+            "concluder": verified_concluder_system_prompt if verified else unverified_concluder_system_prompt,
+        }
 
-def think(chain, problem=problem, answer=None):
+    def think(self, chain, problem=None, answer=None):
+        if answer:
+            thoughts = f"""
+            Question:
+            {problem}
 
-    if answer:
-        thoughts = f"""
-        Question:
-        {problem}
-
-        Chain of Thoughts:
-        {chain}
+            Chain of Thoughts:
+            {chain}
         
-        Solution/Answer: 
-        {answer}"""
-
-        thoughts = verified_thinker_system_prompt + thoughts
-
-    else:
-        thoughts = f"""
-        Question:
-        {problem}
-
-        Chain of Thoughts:
-        {chain}"""
-
-        thoughts = unverified_thinker_system_prompt + thoughts
-
-    # n = 0
-    new_thoughts = []
-    for n in range(4):
-        think = ollama.generate('deepseek-r1:7b', thoughts)
-        next_step = think['response']
-        print("RAW THOUGHT-- " + str(n+1)+ " ---- "+next_step)
-    
-        try:
-            next_step = clean_response(next_step)
-        except Exception as e:
-            print("cleaning failed", e)
-            continue
-
-        new_thoughts.append(next_step)
-        # if with_answer:
-        #     if type(next_step) is str:
-        #             answer = new_thoughts.replace("\n", " ")  # stripping away line breaks  
-        #             print("ANSWER RETURNED")
-        #             return chain, answer, 0
-
-    keys = ["A", "B", "C", "D", "E"]
-    new_thoughts += ["STOP thinking and provide a final answer"]
-    new_thoughts_dict = dict(zip(keys, new_thoughts))
-    new_thoughts =f"""
-    A)
-    {new_thoughts[0]}
-
-    B)
-    {new_thoughts[1]}
-
-    C)
-    {new_thoughts[2]}
-
-    D)
-    {new_thoughts[3]}
-
-    E)
-    {new_thoughts[4]}."""
-
-    return chain, new_thoughts, new_thoughts_dict
-
-
-def select(problem, chain, new_thoughts, new_thoughts_dict, answer=None):
-    # Compose prompt
-    if answer:
-        choices = f"""Question:
-{problem}
-
-Chain of Thoughts:
-{chain}
-
-Solution/Answer:
-{answer}
-
-Possible Next Thinking Steps: 
-{new_thoughts}"""
-        prompt = verified_selector_system_prompt + choices
-    else:
-        choices = f"""Question:
-{problem}
-
-Chain of Thoughts:
-{chain}
-
-Possible Next Thinking Steps: 
-{new_thoughts}"""
-        prompt = unverified_selector_system_prompt + choices  # You can define this separately if needed
-
-    # Call model
-    select_response = ollama.generate('deepseek-r1:7b', prompt)
-    model_output = select_response['response']
-    print("Raw model output:\n", model_output)
-
-    # Try extracting the selected letter
-    match = re.search(r'ANSWER:\s*([A-E])', model_output)
-    if match:
-        new_selection = match.group(1).strip().upper()
-    else:
-        # Try to fallback if it gave a plain letter
-        fallback_match = re.search(r'\b([A-E])\b', model_output.strip())
-        if fallback_match:
-            new_selection = fallback_match.group(1).strip().upper()
+            Solution/Answer: 
+            {answer}"""
+            thoughts = self.prompts["thinker"] + thoughts
         else:
-            print("Could not extract valid option.")
-            print(model_output)
+            thoughts = f"""
+            Question:
+            {problem}
+
+            Chain of Thoughts:
+            {chain}"""
+            thoughts = self.prompts["thinker"] + thoughts
+
+        new_thoughts = []
+        for n in range(4):
+            think_result = ollama.generate(self.model_name, thoughts)
+            next_step = think_result['response']
+            print(f"RAW THOUGHT-- {n+1} ---- {next_step.strip()}")
+            new_thoughts.append(next_step)
+
+        keys = ["A", "B", "C", "D", "E"]
+        new_thoughts += ["STOP thinking and provide a final answer"]
+        new_thoughts_dict = dict(zip(keys, new_thoughts))
+        new_thoughts_formatted = f"""
+        A) {new_thoughts[0]}
+
+        B) {new_thoughts[1]}
+
+        C) {new_thoughts[2]}
+
+        D) {new_thoughts[3]}
+
+        E) {new_thoughts[4]}."""
+
+        return chain, new_thoughts_formatted, new_thoughts_dict
+
+
+    def select(self, problem, chain, new_thoughts, new_thoughts_dict, answer=None):
+        if answer:
+            choices = f"""Question:
+    {problem}
+
+    Chain of Thoughts:
+    {chain}
+
+    Solution/Answer:
+    {answer}
+
+    Possible Next Thinking Steps: 
+    {new_thoughts}"""
+            prompt = self.prompts["selector"] + choices
+        else:
+            choices = f"""Question:
+    {problem}
+
+    Chain of Thoughts:
+    {chain}
+
+    Possible Next Thinking Steps: 
+    {new_thoughts}"""
+            prompt = self.prompts["selector"] + choices
+
+        select_response = ollama.generate(self.model_name, prompt)
+        model_output = select_response['response']
+        print("Raw model output:\n", model_output)
+
+        match = re.search(r'ANSWER:\s*([A-E])', model_output)
+        if match:
+            new_selection = match.group(1).strip().upper()
+        else:
+            fallback_match = re.search(r'\b([A-E])\b', model_output.strip())
+            new_selection = fallback_match.group(1).strip().upper() if fallback_match else None
+
+        if new_selection not in new_thoughts_dict:
+            print(f"Invalid selection: {new_selection}")
             return chain, None
 
-    if new_selection not in new_thoughts_dict:
-        print(f" Invalid selection: {new_selection}")
-        return chain, None
+        self.chain_steps += 1
+        new_chain = f"\nstep {self.chain_steps}: {new_thoughts_dict[new_selection]}"
+        chain += new_chain
 
-    # Append to chain
-    global chain_steps
-    chain_steps += 1
-    new_chain = f"\nstep {chain_steps}: {new_thoughts_dict[new_selection]}"
-    chain += new_chain
+        return chain, new_selection
 
-    return chain, new_selection
+    def run(self, question, answer=None, with_select=True):
+        self.problem = question
+        self.chain = ""
+        self.chain_steps = 0
+        n = 0
+        unanswered = True
 
+        while unanswered and n < 5:
+            self.chain, new_thoughts, new_thoughts_dict = self.think(self.chain, self.problem, answer=answer)
+            print("Options:\n", new_thoughts_dict)
 
+            self.chain, new_selection = self.select(self.problem, self.chain, new_thoughts, new_thoughts_dict, answer=answer)
+            print("Updated Chain:\n", self.chain)
 
-
-def answer( question, with_select=True, answer=None):
-
-    global chain
-    global problem
-    problem = question
-
-    n = 0
-    unanswered = True
-    while unanswered and n < 20:
-        chain, new_thoughts, new_thoughts_dict = think(chain)
-        print(new_thoughts_dict)
-
-        # if with_answer:
-        #     if new_thoughts_dict == 0:
-        #         final_answer = new_thoughts
-        #         return final_answer, chain, n
-
-
-        chain, new_selection = select(problem, chain, new_thoughts, new_thoughts_dict, answer=answer)
-        print(chain)
-        if with_select:
-            print("Selected option:", new_selection)
-            if new_selection.strip().upper() == "E":
+            if with_select and new_selection and new_selection.strip().upper() == "E":
                 unanswered = False
-                if answer:
-                    conclusions = f"""
-                    Question:
-                    {problem}
+                break
+            n += 1
 
-                    Chain of Thoughts:
-                    {chain}
-        
-                    Solution/Answer: 
-                    {answer}"""
+        unanswered = False
+        if answer:
+            conclusions = f"""
+            Question:
+            {self.problem}
 
-                    conclusions = verified_concluder_system_prompt + conclusions
+            Chain of Thoughts:
+            {self.chain}
 
-                else:
-                    conclusions = f"""
-                    Question:
-                    {problem}
+            Solution/Answer: 
+            {answer}"""
+            conclusions = self.prompts["concluder"] + conclusions
+        else:
+            conclusions = f"""
+            Question:
+            {self.problem}
 
-                    Chain of Thoughts:
-                    {chain}"""
+            Chain of Thoughts:
+            {self.chain}"""
+            conclusions = self.prompts["concluder"] + conclusions
 
-                    conclusions = unverified_concluder_system_prompt + conclusions
+        final_response = ollama.generate(self.model_name, conclusions)
+        final_answer = final_response['response']
 
-                final_answer = ollama.generate('deepseek-r1:7b', conclusions)
-                final_answer = final_answer['response']
-
-                return final_answer, chain, n
-        
-        n += 1
-
-question= problem
-
-final_answer, chain, n = answer(question, answer=answer)
-
-# https://github.com/ollama/ollama/blob/main/docs/api.md#response
+        return final_answer, self.chain, n
 
 
-# final_answer = ollama.generate('llama3.2:latest', question)
-# final_answer['response']
-
-
-
-# chain, new_thoughts, new_thoughts_dict = think(chain, problem=problem, answer=None)
+# problem="What is 2+2"
+# answer="2"
+# runner = ChainOfThoughtRunner(model_name='llama3.2:3b', verified=True)
+# final_answer, chain, steps_taken = runner.run(question="What is 2+2?", answer="4")
+# print("Chain of Thought:\n", chain)

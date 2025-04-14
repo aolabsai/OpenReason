@@ -48,7 +48,7 @@ The area is 40 sq-cm.
 Output:
 "I can now multiply 8 by 5 to get the area."
 
-Respond with a single string containing the next thinking step only (only give next step, no full explaination and further steps). No bullets, no labels, no explanations. Maximum length: 30 characters.
+Respond with a single string containing the next thinking step only (only give next step, no full explaination and further steps). No bullets, no labels, no explanations.
 """
 
 

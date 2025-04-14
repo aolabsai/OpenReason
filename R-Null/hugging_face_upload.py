@@ -7,10 +7,12 @@ from decontaminate_util import *
 
 from functools import partial
 from huggingface_hub import login
-import combined 
+from combined import ChainOfThoughtRunner
+
+runner = ChainOfThoughtRunner()
 
 #loading key
-with open("D:/AO/S1/OpenReason/hugging_key.txt", "r") as file:
+with open("D:/AO/S1/OpenReason/R-Null/hugging_key.txt", "r") as file:
     key = file.read().strip()
 
 print(f"Token: {key}")  # Check if the token looks correct
@@ -301,15 +303,15 @@ def load_dolphin_r1(sample_limit=None):
 # }
 
 DS_TO_SELECTION = {
-    "TheoremQA": [partial(load_theoremqa, sample_limit=None), None, None],
-    "NuminaMath": [partial(load_numinamath, sample_limit=500), None, None],
-    "Omni-MATH": [partial(load_generic, name="KbsdJames/Omni-MATH", question_field="problem", split="test", sample_limit=500), None, None],
-    "SciEval": [load_scieval, select_examples_scieval, 250],
-    "OlympiadBench": [load_olympiad_bench, None, None],
-    "GPQA": [partial(load_gpqa_extended, sample_limit=500), None, None],
-    "USACO": [partial(load_usaco, sample_limit=520), None, None],
-    "Dolphin-R1": [partial(load_dolphin_r1, sample_limit=200), None, None],
-    "NuminaMath-TIR": [partial(load_numinamath_tir, sample_limit=500), None, None],
+    # "TheoremQA": [partial(load_theoremqa, sample_limit=10), None, None],
+    "NuminaMath": [partial(load_numinamath, sample_limit=5), None, None],
+    # "Omni-MATH": [partial(load_generic, name="KbsdJames/Omni-MATH", question_field="problem", split="test", sample_limit=500), None, None],
+    # "SciEval": [load_scieval, select_examples_scieval, 2],
+    # "OlympiadBench": [load_olympiad_bench, None, None],
+    # "GPQA": [partial(load_gpqa_extended, sample_limit=5), None, None],
+    # "USACO": [partial(load_usaco, sample_limit=5), None, None],
+    # "Dolphin-R1": [partial(load_dolphin_r1, sample_limit=20), None, None],
+    # "NuminaMath-TIR": [partial(load_numinamath_tir, sample_limit=5), None, None],
 }
 
 
@@ -337,7 +339,13 @@ if __name__ == "__main__":
     ds = datasets.concatenate_datasets(ds_all)
     
     # Add CoT column
-    ds = ds.map(lambda x: {"cot": combined.answer(x["question"], x["solution"])[1], **x})
+    # ds = ds.map(lambda x: {"cot": answer(question=x["question"],with_select=True, answer=x["solution"])[1], **x})
+    ds = ds.map(lambda x: {
+    "cot": runner.run(question=x["question"], answer=x["solution"])[1],  # get the CoT (chain)
+    **x
+})
+    # for item in ds:
+    #     print(item["solution"])
     
     # Simple deduplication
     memory = set()
@@ -349,4 +357,7 @@ if __name__ == "__main__":
     # Drop duplicates in `ds` on "question"
     ds = ds.filter(partial(is_unique, column="question", memory=memory))
     
-    ds.push_to_hub("aolabs/OR_verified", token=key)
+    ds.push_to_hub("aolabs/OR_spot1", token=key)
+
+    # final_answer, chain, n = answer(question=item["question"], answer=item["solution"])
+    # final_answer, chain, n = answer(question="What is 2+2", answer="2")
